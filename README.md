@@ -4,16 +4,16 @@
 
 ## 🚀 Project Overview
 
-A **Python-based system** for managing and analyzing student data, developed to fulfill the requirements of the **FSB_MSA36HN** course.
+A Python-based system developed for the **FSB_MSA36HN** course, focusing on student data management and data analysis.
 
-The project includes:
+The project consists of:
 
-* 🔧 **Backend API** for student management
-* 🖥️ **Desktop Application (FE3)** for data crawling, preprocessing, analysis, and visualization
+* 🔧 Backend API for managing student information
+* 🖥️ Desktop Application (FE3) for data crawling, preprocessing, analysis, and visualization
 
 ## 📝 Functional Requirements
 
-### 👨‍🎓 Student Information
+**Student information includes:**
 
 * Student ID
 * First name, Last name
@@ -22,32 +22,28 @@ The project includes:
 * Hometown
 * Math, Literature, English scores
 
-### ⚙️ System Features
+**System features:**
 
 * CRUD operations for students
-* API returns student data in JSON format
-* Support missing or incomplete data
-* Preloaded dataset of **100 students**
-
----
+* REST API returning JSON data
+* Support for missing or incomplete data
+* Preloaded dataset of 100 students
 
 ## 🏗️ System Architecture
 
 ```
 Backend (FastAPI + MongoDB)
-        ↓
+   ↓
 REST API (JSON)
-        ↓
+   ↓
 Desktop App (PyQt5)
-        ↓
+   ↓
 Crawl → Save Text File → Pandas Preprocessing → Analysis → Visualization
 ```
 
----
-
 ## 🧰 Technologies Used
 
-### 🔙 Backend
+**Backend**
 
 * 🐍 Python 3.10+
 * ⚡ FastAPI
@@ -55,7 +51,7 @@ Crawl → Save Text File → Pandas Preprocessing → Analysis → Visualization
 * 🔌 PyMongo
 * 🔐 python-dotenv
 
-### 🖥️ Frontend (FE3 – Desktop App)
+**Frontend (FE3 – Desktop App)**
 
 * 🧩 PyQt5
 * 🌐 Requests
@@ -63,11 +59,9 @@ Crawl → Save Text File → Pandas Preprocessing → Analysis → Visualization
 * 📈 Matplotlib
 * 🔢 NumPy
 
----
-
 ## 📂 Project Structure
 
-### Backend
+**Backend**
 
 ```
 backend/
@@ -82,7 +76,7 @@ backend/
 └── requirements.txt
 ```
 
-### Desktop App (FE3)
+**Desktop App (FE3)**
 
 ```
 desktop_app/
@@ -99,57 +93,35 @@ desktop_app/
 └── requirements.txt
 ```
 
----
-
 ## 🔄 FE3 Data Processing Workflow
 
-1. 🔎 Crawl student data from Backend API
-2. 💾 Save data to text file
-3. 🧹 Clean and normalize data using Pandas
-4. 📊 Perform data analysis
-5. 📈 Visualize results using charts
-
----
+1. Crawl student data from Backend API
+2. Save data to a text file
+3. Clean and normalize data using Pandas
+4. Perform data analysis
+5. Visualize results using charts
 
 ## ▶️ How to Run
 
-### 🔧 Backend
+**Backend**
 
 ```bash
 cd backend
 uvicorn app.main:app --reload
 ```
 
-📍 API Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+API documentation available at: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-### 🖥️ Desktop App (FE3)
+**Desktop App (FE3)**
 
 ```bash
 cd desktop_app
 python main.py
 ```
 
----
-
-## 📊 Data Analysis & Visualization
-
-* 📌 Average score comparison by hometown
-* 📌 Score distribution analysis
-* 📌 Math vs English comparison
-
-**Charts used:**
-
-* Bar Chart
-* Grouped Bar Chart
-* Box Plot (advanced analysis)
-
----
-
 ## ✅ Conclusion
 
-* ✔ Fully meets the project requirements
-* ✔ Clear separation between Backend and FE3
-* ✔ Effective use of Pandas for data preprocessing and analysis
-* ✔ Desktop application is intuitive and extensible
-
----
+* Fully meets project requirements
+* Clear separation between Backend and FE3
+* Effective use of Pandas for preprocessing and analysis
+* Desktop application is intuitive and extensible
