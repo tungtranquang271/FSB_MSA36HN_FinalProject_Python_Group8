@@ -2,8 +2,6 @@
 
 ## 📊 Student Management & Data Analysis System
 
----
-
 ## 🚀 Project Overview
 
 A **Python-based system** for managing and analyzing student data, developed to fulfill the requirements of the **FSB_MSA36HN** course.
@@ -12,8 +10,6 @@ The project includes:
 
 * 🔧 **Backend API** for student management
 * 🖥️ **Desktop Application (FE3)** for data crawling, preprocessing, analysis, and visualization
-
----
 
 ## 📝 Functional Requirements
 
