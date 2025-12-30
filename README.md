@@ -1,9 +1,3 @@
-Dưới đây là **README hoàn chỉnh – đúng yêu cầu đề bài – đúng những gì nhóm bạn đã làm từ Backend đến FE3**, viết theo phong cách **đồ án học phần / bảo vệ**, không marketing, không lan man.
-
-Bạn có thể **copy dán nguyên file này làm `README.md`** cho repo:
-
----
-
 # FSB_MSA36HN_FinalProject__Python_Group8
 
 ## Student Management & Data Analysis System
