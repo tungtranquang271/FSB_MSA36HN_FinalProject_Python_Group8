@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.services.student_service import StudentService
 from app.models.student import StudentBase
 
-router = APIRouter(prefix="/students", tags=["Students"])
+router = APIRouter()
 service = StudentService()
 
 
