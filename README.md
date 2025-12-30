@@ -80,17 +80,17 @@ backend/
 
 ```
 desktop_app/
-├── main.py
-├── config.py
-├── api/
-├── crawler/
-├── storage/
-├── preprocessing/
-├── analysis/
-├── visualization/
-├── ui/
-├── data/
-└── requirements.txt
+├── analysis/          # Data analysis using Pandas (statistics, comparison, correlation)
+├── api/               # API client layer (call backend APIs)
+├── crawler/           # Crawl student data from backend APIs
+├── preprocessing/     # Data cleaning & normalization (Pandas)
+├── storage/           # Local file storage (students.txt)
+├── ui/                # PyQt5 user interface (windows, buttons, layouts)
+├── visualization/     # Data visualization (bar chart, scatter, performance chart)
+├── .gitignore         # Ignore virtual env, cache, data files
+├── main.py            # Application entry point
+├── requirements.txt   # Python dependencies
+└── students.txt       # Crawled student data (generated locally)
 ```
 
 ## 🔄 FE3 Data Processing Workflow
