@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from app.api.student import router as student_router
 
 app = FastAPI(
-    title="Student Management API",
+    title="Student Management API Version 1.0.0",
     description="API for managing and analyzing student data",
     version="1.0.0"
 )
