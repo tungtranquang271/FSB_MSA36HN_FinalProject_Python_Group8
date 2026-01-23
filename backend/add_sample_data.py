@@ -2,35 +2,82 @@ from app.core.database import student_collection
 from datetime import datetime
 import random
 
-# Vietnamese names data
-first_names = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Võ", "Đặng", "Bùi", "Đỗ"]
-last_names = ["Văn A", "Thị B", "Minh C", "Anh D", "Tùng E", "Lan F", "Hải G", "Mai H", "Long I", "Trang J"]
-cities = ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Cần Thơ", "Hải Phòng", "Huế", "Nha Trang", "Vũng Tàu", "Quảng Ninh", "Bình Dương"]
+first_names = [
+    "Nguyen", "Tran", "Le", "Pham", "Hoang",
+    "Huynh", "Vo", "Dang", "Bui", "Do"
+]
 
-# Generate 100 sample students
+last_names = [
+    "Van A", "Thi B", "Minh C", "Anh D", "Tung E",
+    "Lan F", "Hai G", "Mai H", "Long I", "Trang J"
+]
+
+cities = [
+    "Ha Noi", "Ho Chi Minh", "Da Nang", "Can Tho",
+    "Hai Phong", "Hue", "Nha Trang", "Vung Tau",
+    "Quang Ninh", "Binh Duong"
+]
+
 sample_students = []
-for i in range(1, 101):
-    student_id = f"SV{i:03d}"  # SV001, SV002, ..., SV100
+
+TOTAL_RECORDS = 100
+UNIQUE_IDS = 70        # 70 unique
+DUPLICATE_RECORDS = 30 # 30 duplicate
+
+# ----------------------
+# 1. Generate 70 UNIQUE student_id
+# ----------------------
+student_ids = [f"SV{i:03d}" for i in range(1, UNIQUE_IDS + 1)]
+
+# ----------------------
+# 2. Add 30 DUPLICATE student_id
+# ----------------------
+student_ids += random.choices(student_ids, k=DUPLICATE_RECORDS)
+
+# Shuffle to mix duplicates
+random.shuffle(student_ids)
+
+# ----------------------
+# 3. Generate records
+# ----------------------
+for student_id in student_ids:
     first_name = random.choice(first_names)
     last_name = random.choice(last_names)
-    email = f"{first_name.lower()}{last_name.lower().replace(' ', '')}{i}@example.com"
-    # Random birth date between 1995-2005
-    year = random.randint(1995, 2005)
-    month = random.randint(1, 12)
-    day = random.randint(1, 28)  # Avoid invalid dates
-    date_of_birth = datetime(year, month, day)
-    hometown = random.choice(cities)
-    if hometown == "Hà Nội":
-        math = round(random.uniform(8.0, 10.0), 1)
-        literature = round(random.uniform(8.0, 10.0), 1)
-        english = round(random.uniform(8.0, 10.0), 1)
+
+    # 20% missing email
+    email = (
+        f"{first_name.lower()}{last_name.lower().replace(' ', '')}{random.randint(1,999)}@example.com"
+        if random.random() > 0.2
+        else None
+    )
+
+    # 15% missing date_of_birth
+    if random.random() > 0.15:
+        year = random.randint(1995, 2005)
+        month = random.randint(1, 12)
+        day = random.randint(1, 28)
+        date_of_birth = datetime(year, month, day)
     else:
-        math = round(random.uniform(5.0, 8.0), 1)
-        literature = round(random.uniform(5.0, 8.0), 1)
-        english = round(random.uniform(5.0, 8.0), 1)
+        date_of_birth = None
+
+    # 10% missing hometown
+    hometown = random.choice(cities) if random.random() > 0.1 else None
+
+    # Scores with missing values
+    def random_score(min_val, max_val, missing_rate=0.2):
+        return round(random.uniform(min_val, max_val), 1) if random.random() > missing_rate else None
+
+    if hometown == "Ha Noi":
+        math = random_score(8.0, 10.0)
+        literature = random_score(8.0, 10.0)
+        english = random_score(8.0, 10.0)
+    else:
+        math = random_score(5.0, 8.0)
+        literature = random_score(5.0, 8.0)
+        english = random_score(5.0, 8.0)
 
     student = {
-        "student_id": student_id,
+        "student_id": student_id,   # 🔥 DUPLICATE HERE
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
@@ -40,16 +87,18 @@ for i in range(1, 101):
         "literature": literature,
         "english": english
     }
+
     sample_students.append(student)
 
+# ----------------------
+# 4. Insert to DB
+# ----------------------
 try:
-    # Clear existing data first
     student_collection.delete_many({})
-    print("🗑️  Đã xóa dữ liệu cũ.")
+    print("🗑️  Old data removed.")
 
     result = student_collection.insert_many(sample_students)
-    print(f"✅ Đã thêm {len(result.inserted_ids)} học sinh mẫu vào database.")
-    print(f"ID của tài liệu đầu tiên: {result.inserted_ids[0]}")
-    print(f"ID của tài liệu cuối cùng: {result.inserted_ids[-1]}")
+    print(f"✅ Inserted {len(result.inserted_ids)} EXTREMELY DIRTY records.")
+
 except Exception as e:
-    print(f"❌ Lỗi khi thêm dữ liệu: {e}")
+    print(f"❌ Insert error: {e}")

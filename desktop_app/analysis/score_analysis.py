@@ -1,119 +1,124 @@
 import pandas as pd
 
+# =========================
+# FIELD MAPPING (CLEAN DATA)
+# =========================
+MATH = "math"
+ENGLISH = "english"
+LITERATURE = "literature"
+
 
 def average_math_english_by_hometown(df: pd.DataFrame) -> pd.DataFrame:
-    needed = {"hometown", "math_score", "english_score"}
+    needed = {"hometown", MATH, ENGLISH}
     missing = needed - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+        raise ValueError(f"Missing required columns: {missing}")
 
-    out = (
-        df.groupby("hometown")[["math_score", "english_score"]]
+    return (
+        df.groupby("hometown")[[MATH, ENGLISH]]
         .mean()
         .reset_index()
         .sort_values("hometown")
     )
-    return out
 
 
 def average_all_subjects_by_hometown(df: pd.DataFrame) -> pd.DataFrame:
-    needed = {"hometown", "math_score", "english_score", "literature_score"}
+    needed = {"hometown", MATH, ENGLISH, LITERATURE}
     missing = needed - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+        raise ValueError(f"Missing required columns: {missing}")
 
-    out = (
-        df.groupby("hometown")[["math_score", "english_score", "literature_score"]]
+    return (
+        df.groupby("hometown")[[MATH, ENGLISH, LITERATURE]]
         .mean()
         .reset_index()
         .sort_values("hometown")
     )
-    return out
 
 
 def subject_difficulty(df: pd.DataFrame) -> pd.DataFrame:
-    needed = {"math_score", "english_score", "literature_score"}
+    needed = {MATH, ENGLISH, LITERATURE}
     missing = needed - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+        raise ValueError(f"Missing required columns: {missing}")
 
-    avg_math = df["math_score"].mean()
-    avg_eng = df["english_score"].mean()
-    avg_lit = df["literature_score"].mean()
-
-    out = pd.DataFrame(
-        {
-            "subject": ["Math", "English", "Literature"],
-            "average_score": [avg_math, avg_eng, avg_lit],
-        }
-    ).sort_values("average_score")  # thấp nhất = khó nhất
-    return out
+    return pd.DataFrame({
+        "subject": ["Math", "English", "Literature"],
+        "average_score": [
+            df[MATH].mean(),
+            df[ENGLISH].mean(),
+            df[LITERATURE].mean()
+        ]
+    }).sort_values("average_score")
 
 
 def correlation_math_english(df: pd.DataFrame) -> float:
-    needed = {"math_score", "english_score"}
+    needed = {MATH, ENGLISH}
     missing = needed - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+        raise ValueError(f"Missing required columns: {missing}")
 
-    clean = df[["math_score", "english_score"]].dropna()
+    clean = df[[MATH, ENGLISH]].dropna()
     if len(clean) < 2:
-        raise ValueError("Not enough data to compute correlation.")
-    return float(clean["math_score"].corr(clean["english_score"]))
+        raise ValueError("Not enough data to compute correlation")
+
+    return float(clean[MATH].corr(clean[ENGLISH]))
 
 
-def top_students_by_subject(df: pd.DataFrame, subject: str, limit: int = 5) -> pd.DataFrame:
+def top_students_by_subject(df: pd.DataFrame, subject: str, limit: int = 5):
     subject_map = {
-        "math": "math_score",
-        "english": "english_score",
-        "literature": "literature_score",
+        "math": MATH,
+        "english": ENGLISH,
+        "literature": LITERATURE,
     }
+
     if subject not in subject_map:
-        raise ValueError("subject must be one of: math, english, literature")
+        raise ValueError("subject must be math | english | literature")
 
     col = subject_map[subject]
-    needed = {col, "student_id", "first_name", "last_name"}
+
+    needed = {"student_id", "first_name", "last_name", col}
     missing = needed - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+        raise ValueError(f"Missing required columns: {missing}")
 
-    temp = df[[ "student_id", "first_name", "last_name", col ]].dropna().copy()
-    temp["full_name"] = temp["first_name"].astype(str).str.strip() + " " + temp["last_name"].astype(str).str.strip()
+    temp = df[["student_id", "first_name", "last_name", col]].dropna()
+    temp["full_name"] = temp["first_name"] + " " + temp["last_name"]
     temp = temp.rename(columns={col: "score"})
-    out = temp.sort_values("score", ascending=False).head(limit)[["student_id", "full_name", "score"]]
-    return out
 
-def performance_level_distribution(df: pd.DataFrame, subject: str = "english") -> pd.DataFrame:
+    return temp.sort_values("score", ascending=False).head(limit)[
+        ["student_id", "full_name", "score"]
+    ]
+
+
+def performance_level_distribution(df: pd.DataFrame, subject: str = "english"):
     subject_map = {
-        "math": "math_score",
-        "english": "english_score",
-        "literature": "literature_score",
+        "math": MATH,
+        "english": ENGLISH,
+        "literature": LITERATURE,
     }
 
     if subject not in subject_map:
-        raise ValueError("subject must be one of: math, english, literature")
+        raise ValueError("subject must be math | english | literature")
 
     col = subject_map[subject]
-
     if col not in df.columns:
         raise ValueError(f"Missing column: {col}")
 
     scores = df[col].dropna()
 
-    def classify(score):
-        if score < 5:
+    def classify(x):
+        if x < 5:
             return "Weak"
-        elif score < 7:
+        elif x < 7:
             return "Average"
-        elif score < 8:
+        elif x < 8:
             return "Good"
-        else:
-            return "Excellent"
-
-    levels = scores.apply(classify)
+        return "Excellent"
 
     result = (
-        levels.value_counts()
+        scores.apply(classify)
+        .value_counts()
         .reindex(["Weak", "Average", "Good", "Excellent"], fill_value=0)
         .reset_index()
     )

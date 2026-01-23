@@ -10,6 +10,18 @@ service = StudentService()
 def get_all_students():
     return service.get_all_students()
 
+@router.get("/paged")
+def get_students_paged(
+    page: int = 1,
+    page_size: int = 10,
+    keyword: str | None = None
+):
+    return service.get_students_paginated(
+        page=page,
+        page_size=page_size,
+        keyword=keyword
+    )
+
 
 @router.get("/{student_id}")
 def get_student(student_id: str):
@@ -33,3 +45,4 @@ def update_student(student_id: str, student: StudentBase):
 def delete_student(student_id: str):
     service.delete_student(student_id)
     return {"message": "Student deleted successfully"}
+

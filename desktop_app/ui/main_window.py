@@ -1,14 +1,16 @@
+import sys
+import pandas as pd
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QPushButton, QVBoxLayout, QHBoxLayout,
     QMessageBox, QApplication, QLabel, QGroupBox, QComboBox, QSpinBox
 )
-import sys
 
 from crawler.student_crawler import crawl_students
 from storage.file_storage import save_to_text_file, load_from_text_file
-from preprocessing.data_cleaner import clean_student_data
-from analysis.score_analysis import performance_level_distribution
-from visualization.bar_chart import plot_performance_level
+from preprocessing.data_cleaner import clean_and_save_students
+from display.display_student import StudentPopup
+from ui.student_api_window import StudentApiWindow
+
 
 from analysis.score_analysis import (
     average_math_english_by_hometown,
@@ -16,6 +18,7 @@ from analysis.score_analysis import (
     subject_difficulty,
     correlation_math_english,
     top_students_by_subject,
+    performance_level_distribution,
 )
 
 from visualization.bar_chart import (
@@ -23,6 +26,7 @@ from visualization.bar_chart import (
     plot_grouped_all_subjects_by_hometown,
     plot_subject_difficulty,
     plot_top_students,
+    plot_performance_level,
 )
 
 from visualization.distribution_chart import (
@@ -30,50 +34,95 @@ from visualization.distribution_chart import (
     plot_scatter,
 )
 
-DATA_FILE = "students.txt"
+# =====================
+# FILE PATHS
+# =====================
+RAW_DATA_FILE = "students_raw.txt"
+CLEAN_DATA_FILE = "students_clean.txt"
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Student Data Analysis (FE3)")
-        self.setGeometry(250, 120, 620, 420)
+        self.setWindowTitle("Student Data Analysis Dashboard")
+        self.setGeometry(250, 120, 650, 450)
+        self.dialogs = []
+
         self._build_ui()
 
+    # =====================================================
+    # UI
+    # =====================================================
     def _build_ui(self):
         root = QWidget()
         main_layout = QVBoxLayout()
 
+        # ---------- TITLE ----------
         title = QLabel("Student Data Analysis Dashboard")
         title.setStyleSheet("font-size: 16px; font-weight: 600;")
         main_layout.addWidget(title)
 
-        # --- Crawl section
-        crawl_box = QGroupBox("Data")
-        crawl_layout = QVBoxLayout()
-        self.btn_crawl = QPushButton("Crawl Data (API) → Save to Text File")
-        self.btn_crawl.clicked.connect(self.on_crawl)
-        crawl_layout.addWidget(self.btn_crawl)
-        crawl_box.setLayout(crawl_layout)
-        main_layout.addWidget(crawl_box)
+        # ---------- DATA (CRAWL / CLEAN) ----------
+        data_box = QGroupBox("Data")
+        data_layout = QVBoxLayout()
 
-        # --- Analysis buttons
+        self.btn_crawl = QPushButton("1) Crawl Data (API → RAW file)")
+        self.btn_crawl.clicked.connect(self.on_crawl)
+
+        self.btn_clean = QPushButton("2) Clean Data (RAW → CLEAN file)")
+        self.btn_clean.clicked.connect(self.on_clean)
+
+        data_layout.addWidget(self.btn_crawl)
+        data_layout.addWidget(self.btn_clean)
+        data_box.setLayout(data_layout)
+        main_layout.addWidget(data_box)
+
+        # ---------- DISPLAY ----------
+        display_box = QGroupBox("Data Display")
+        display_layout = QVBoxLayout()
+
+        self.cbo_data = QComboBox()
+        self.cbo_data.addItems(["raw data", "clean data"])
+
+        self.btn_display = QPushButton("Display Data")
+        self.btn_display.clicked.connect(self.on_open_popup)
+
+        display_layout.addWidget(QLabel("Select data:"))
+        display_layout.addWidget(self.cbo_data)
+        display_layout.addWidget(self.btn_display)
+
+        display_box.setLayout(display_layout)
+        main_layout.addWidget(display_box)
+
+        # ---------- API OPERATIONS ----------
+        api_box = QGroupBox("API Operations")
+        api_layout = QVBoxLayout()
+
+        self.btn_api_manager = QPushButton("Open Student API Manager (CRUD)")
+        self.btn_api_manager.clicked.connect(self.on_open_api_manager)
+
+        api_layout.addWidget(self.btn_api_manager)
+        api_box.setLayout(api_layout)
+
+        main_layout.addWidget(api_box)
+
+        # ---------- ANALYSIS ----------
         analysis_box = QGroupBox("Analysis & Charts")
         analysis_layout = QVBoxLayout()
 
-        self.btn_avg_math_eng = QPushButton("1) Avg Math vs English by Hometown (Grouped Bar)")
+        self.btn_avg_math_eng = QPushButton("Avg Math vs English by Hometown")
         self.btn_avg_math_eng.clicked.connect(self.on_avg_math_english_by_hometown)
 
-        self.btn_avg_all = QPushButton("2) Avg All Subjects by Hometown (Grouped Bar)")
+        self.btn_avg_all = QPushButton("Avg All Subjects by Hometown")
         self.btn_avg_all.clicked.connect(self.on_avg_all_subjects_by_hometown)
 
-        self.btn_subject_diff = QPushButton("3) Subject Difficulty (Average Score Bar)")
+        self.btn_subject_diff = QPushButton("Subject Difficulty")
         self.btn_subject_diff.clicked.connect(self.on_subject_difficulty)
 
-        self.btn_corr = QPushButton("4) Correlation: Math vs English (Scatter + Value)")
+        self.btn_corr = QPushButton("Correlation: Math vs English")
         self.btn_corr.clicked.connect(self.on_correlation_math_english)
 
-        # --- Top students controls (subject + limit)
+        # ---- top students ----
         top_row = QHBoxLayout()
         self.cbo_subject = QComboBox()
         self.cbo_subject.addItems(["math", "english", "literature"])
@@ -81,16 +130,15 @@ class MainWindow(QMainWindow):
         self.spin_limit.setRange(3, 20)
         self.spin_limit.setValue(5)
 
-        self.btn_top = QPushButton("5) Top Students by Subject (Horizontal Bar)")
+        self.btn_top = QPushButton("Top Students by Subject")
         self.btn_top.clicked.connect(self.on_top_students)
 
         top_row.addWidget(QLabel("Subject:"))
         top_row.addWidget(self.cbo_subject)
         top_row.addWidget(QLabel("Top N:"))
         top_row.addWidget(self.spin_limit)
-        top_row.addStretch(1)
 
-        self.btn_performance = QPushButton("6) Performance Level Distribution (Bar Chart)")
+        self.btn_performance = QPushButton("Performance Level Distribution")
         self.btn_performance.clicked.connect(self.on_performance_level)
 
         analysis_layout.addWidget(self.btn_avg_math_eng)
@@ -107,92 +155,116 @@ class MainWindow(QMainWindow):
         root.setLayout(main_layout)
         self.setCentralWidget(root)
 
-    # ---------- helpers ----------
-    def _load_clean_df(self):
-        raw = load_from_text_file(DATA_FILE)
-        df = clean_student_data(raw)
-        if df.empty:
-            raise ValueError("No valid data after preprocessing.")
-        return df
+    # =====================================================
+    # HELPERS
+    # =====================================================
+    def _load_raw_df(self):
+        data = load_from_text_file(RAW_DATA_FILE)
+        if not data:
+            raise ValueError("Raw data file is empty. Please crawl data first.")
+        return pd.DataFrame(data)
 
-    # ---------- actions ----------
+    def _load_clean_df(self):
+        data = load_from_text_file(CLEAN_DATA_FILE)
+        if not data:
+            raise ValueError("Clean data file is empty. Please clean data first.")
+        return pd.DataFrame(data)
+
+    # =====================================================
+    # ACTIONS
+    # =====================================================
     def on_crawl(self):
         try:
             data = crawl_students()
-            save_to_text_file(data, DATA_FILE)
-            QMessageBox.information(self, "Success", f"Crawled & saved {len(data)} students to {DATA_FILE}")
+            save_to_text_file(data, RAW_DATA_FILE)
+            QMessageBox.information(
+                self, "Success",
+                f"Crawled & saved {len(data)} students to {RAW_DATA_FILE}"
+            )
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
-    def on_avg_math_english_by_hometown(self):
+    def on_clean(self):
         try:
-            df = self._load_clean_df()
-            result = average_math_english_by_hometown(df)
-            plot_grouped_math_english_by_hometown(result)
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No data file found. Please click Crawl Data first.")
+            clean_and_save_students()
+            QMessageBox.information(
+                self, "Success",
+                f"Clean data saved to {CLEAN_DATA_FILE}"
+            )
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
+
+    def on_open_popup(self):
+        try:
+            if self.cbo_data.currentText() == "clean data":
+                df = self._load_clean_df()
+            else:
+                df = self._load_raw_df()
+
+            popup = StudentPopup(df)
+            popup.show()
+            self.dialogs.append(popup)
+
+        except Exception as e:
+            QMessageBox.warning(self, "Warning", str(e))
+
+    def on_open_api_manager(self):
+        try:
+            win = StudentApiWindow()
+            win.show()
+            self.dialogs.append(win)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
+
+    # ================= ANALYSIS =================
+    def on_avg_math_english_by_hometown(self):
+        df = self._load_clean_df()
+        result = average_math_english_by_hometown(df)
+        plot_grouped_math_english_by_hometown(result)
 
     def on_avg_all_subjects_by_hometown(self):
-        try:
-            df = self._load_clean_df()
-            result = average_all_subjects_by_hometown(df)
-            plot_grouped_all_subjects_by_hometown(result)
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No data file found. Please click Crawl Data first.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+        df = self._load_clean_df()
+        result = average_all_subjects_by_hometown(df)
+        plot_grouped_all_subjects_by_hometown(result)
 
     def on_subject_difficulty(self):
-        try:
-            df = self._load_clean_df()
-            result = subject_difficulty(df)
-            plot_subject_difficulty(result)
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No data file found. Please click Crawl Data first.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+        df = self._load_clean_df()
+        result = subject_difficulty(df)
+        plot_subject_difficulty(result)
 
     def on_correlation_math_english(self):
-        try:
-            df = self._load_clean_df()
-            corr = correlation_math_english(df)
-            # chart
-            plot_scatter(df.dropna(subset=["math_score", "english_score"]),
-                         "math_score", "english_score",
-                         "Math vs English (Scatter)")
-            QMessageBox.information(self, "Correlation Result", f"Correlation (Math, English) = {corr:.3f}")
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No data file found. Please click Crawl Data first.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+        df = self._load_clean_df()
+        corr = correlation_math_english(df)
+
+        plot_scatter(
+            df.dropna(subset=["math", "english"]),
+            "math", "english",
+            "Math vs English"
+        )
+
+        QMessageBox.information(
+            self, "Correlation Result",
+            f"Correlation (Math, English) = {corr:.3f}"
+        )
 
     def on_top_students(self):
-        try:
-            df = self._load_clean_df()
-            subject = self.cbo_subject.currentText()
-            limit = int(self.spin_limit.value())
-            top_df = top_students_by_subject(df, subject=subject, limit=limit)
-            plot_top_students(top_df, subject_label=subject.capitalize())
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No data file found. Please click Crawl Data first.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+        df = self._load_clean_df()
+        subject = self.cbo_subject.currentText()
+        limit = int(self.spin_limit.value())
+        top_df = top_students_by_subject(df, subject=subject, limit=limit)
+        plot_top_students(top_df, subject_label=subject.capitalize())
 
     def on_performance_level(self):
-        try:
-            df = self._load_clean_df()
-            subject = self.cbo_subject.currentText()  # dùng chung combo box
-            result = performance_level_distribution(df, subject=subject)
-            plot_performance_level(result, subject_label=subject.capitalize())
-        except FileNotFoundError:
-            QMessageBox.warning(self, "Warning", "No data file found. Please click Crawl Data first.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+        df = self._load_clean_df()
+        subject = self.cbo_subject.currentText()
+        result = performance_level_distribution(df, subject=subject)
+        plot_performance_level(result, subject_label=subject.capitalize())
 
 
-
+# =====================================================
+# RUN APP
+# =====================================================
 def run_app():
     app = QApplication(sys.argv)
     w = MainWindow()

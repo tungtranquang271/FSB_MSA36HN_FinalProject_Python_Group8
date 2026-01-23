@@ -4,11 +4,14 @@ import numpy as np
 
 def plot_grouped_math_english_by_hometown(df):
     """
-    df columns: hometown, math_score, english_score
+    Expected columns:
+    - hometown
+    - math
+    - english
     """
     hometowns = df["hometown"].tolist()
-    math_scores = df["math_score"].tolist()
-    english_scores = df["english_score"].tolist()
+    math_scores = df["math"].tolist()
+    english_scores = df["english"].tolist()
 
     x = np.arange(len(hometowns))
     width = 0.38
@@ -28,12 +31,16 @@ def plot_grouped_math_english_by_hometown(df):
 
 def plot_grouped_all_subjects_by_hometown(df):
     """
-    df columns: hometown, math_score, english_score, literature_score
+    Expected columns:
+    - hometown
+    - math
+    - english
+    - literature
     """
     hometowns = df["hometown"].tolist()
-    math_scores = df["math_score"].tolist()
-    english_scores = df["english_score"].tolist()
-    literature_scores = df["literature_score"].tolist()
+    math_scores = df["math"].tolist()
+    english_scores = df["english"].tolist()
+    literature_scores = df["literature"].tolist()
 
     x = np.arange(len(hometowns))
     width = 0.26
@@ -54,14 +61,16 @@ def plot_grouped_all_subjects_by_hometown(df):
 
 def plot_subject_difficulty(df):
     """
-    df columns: subject, average_score
+    Expected columns:
+    - subject
+    - average_score
+
     Lower average score = harder subject
     """
-
     subjects = df["subject"].tolist()
     scores = df["average_score"].tolist()
 
-    colors = ["#4C72B0", "#DD8452", "#55A868"]  # blue, orange, green
+    colors = ["#4C72B0", "#DD8452", "#55A868"]
 
     plt.figure(figsize=(7, 5))
     bars = plt.bar(subjects, scores, color=colors)
@@ -88,7 +97,10 @@ def plot_subject_difficulty(df):
 
 def plot_top_students(df, subject_label: str):
     """
-    df columns: student_id, full_name, score
+    Expected columns:
+    - student_id
+    - full_name
+    - score
     """
     labels = df["full_name"].tolist()
     scores = df["score"].tolist()
@@ -97,14 +109,21 @@ def plot_top_students(df, subject_label: str):
     plt.barh(labels, scores)
     plt.xlabel("Score")
     plt.title(f"Top Students - {subject_label}")
+    plt.gca().invert_yaxis()  # highest on top
     plt.tight_layout()
     plt.show()
 
+
 def plot_performance_level(df, subject_label: str):
+    """
+    Expected columns:
+    - performance_level
+    - count
+    """
     levels = df["performance_level"].tolist()
     counts = df["count"].tolist()
 
-    colors = ["#C44E52", "#4C72B0", "#DD8452", "#55A868"]  # red, blue, orange, green
+    colors = ["#C44E52", "#4C72B0", "#DD8452", "#55A868"]
 
     plt.figure(figsize=(7, 5))
     bars = plt.bar(levels, counts, color=colors)

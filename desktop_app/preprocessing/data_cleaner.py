@@ -1,41 +1,86 @@
 import pandas as pd
+from storage.file_storage import load_from_text_file, save_to_text_file
+
+RAW_FILE = "students_raw.txt"
+CLEAN_FILE = "students_clean.txt"
 
 
-def clean_student_data(raw_data):
-    df = pd.DataFrame(raw_data)
+def clean_and_save_students():
+    # =====================
+    # 1. Load RAW data
+    # =====================
+    df = pd.DataFrame(load_from_text_file(RAW_FILE))
 
-    # normalize columns
-    df.columns = df.columns.str.lower().str.strip()
-
-    # rename from backend fields -> standard fields
-    rename_map = {
-        "math": "math_score",
-        "english": "english_score",
-        "literature": "literature_score",
-    }
-    df = df.rename(columns=rename_map)
-
-    # ensure required columns exist
-    required_cols = [
-        "student_id", "first_name", "last_name",
-        "email", "date_of_birth", "hometown",
-        "math_score", "english_score", "literature_score"
-    ]
-    for col in required_cols:
-        if col not in df.columns:
-            df[col] = None
-
-    # convert scores to numeric (null nếu không hợp lệ)
-    score_cols = ["math_score", "english_score", "literature_score"]
-    for col in score_cols:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    # clean hometown (KHÔNG drop sinh viên)
-    df["hometown"] = df["hometown"].astype(str).str.strip()
-    df.loc[df["hometown"].isin(["None", "nan", ""]), "hometown"] = None
-
-    # ✅ HANDLE DUPLICATE: unique by student_id
+    # =====================
+    # 2. Sort & remove duplicate
+    # =====================
     if "student_id" in df.columns:
-        df = df.drop_duplicates(subset=["student_id"], keep="last")
+        df = df.sort_values("student_id")
+        df = df.drop_duplicates("student_id", keep="last")
+
+    # =====================
+    # 3. Type casting (SAFE)
+    # =====================
+    if "date_of_birth" in df.columns:
+        df["date_of_birth"] = pd.to_datetime(
+            df["date_of_birth"], errors="coerce"
+        )
+
+    score_cols = [c for c in ["math", "literature", "english"] if c in df.columns]
+    for c in score_cols:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    # =====================
+    # 4. Handle missing values
+    # =====================
+
+    # ---- hometown ----
+    if "hometown" in df.columns and df["hometown"].notna().any():
+        df["hometown"] = df["hometown"].fillna(
+            df["hometown"].mode()[0]
+        )
+
+    # ---- fill score by hometown mean ----
+    if "hometown" in df.columns and score_cols:
+        df[score_cols] = (
+            df.groupby("hometown")[score_cols]
+              .transform(lambda x: x.fillna(x.mean()))
+        )
+
+    # ---- fallback global mean ----
+    if score_cols:
+        df[score_cols] = df[score_cols].fillna(
+            df[score_cols].mean()
+        )
+
+    # ---- round scores to 2 decimals ----
+    if score_cols:
+        df[score_cols] = df[score_cols].round(2)
+
+    # =====================
+    # 5. Drop invalid records
+    # =====================
+    required = [
+        c for c in ["student_id", "first_name", "last_name"]
+        if c in df.columns
+    ]
+
+    if required:
+        df = df[df[required].notna().all(axis=1)]
+
+    # =====================
+    # 6. Datetime → string (JSON SAFE)
+    # =====================
+    if "date_of_birth" in df.columns:
+        df["date_of_birth"] = df["date_of_birth"].dt.strftime("%Y-%m-%d")
+
+    # =====================
+    # 7. Save CLEAN data
+    # =====================
+    save_to_text_file(df.to_dict(orient="records"), CLEAN_FILE)
 
     return df
+
+
+if __name__ == "__main__":
+    clean_and_save_students()

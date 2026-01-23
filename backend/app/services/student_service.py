@@ -62,3 +62,24 @@ class StudentService:
             )
 
         return {"message": "Student deleted successfully"}
+
+    # ======================
+    # NEW: PAGINATION + SEARCH
+    # ======================
+    def get_students_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        keyword: str | None = None
+    ):
+        if page < 1 or page_size < 1:
+            raise HTTPException(
+                status_code=400,
+                detail="page and page_size must be >= 1"
+            )
+
+        return self.repo.find_all_paginated(
+            page=page,
+            page_size=page_size,
+            keyword=keyword
+        )
