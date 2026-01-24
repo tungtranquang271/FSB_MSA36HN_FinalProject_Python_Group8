@@ -10,25 +10,30 @@ STUDENTS_PER_PAGE = 10
 class StudentPopup(QDialog):
     def __init__(self, df):
         super().__init__()
-        self.setWindowTitle("Editable Students")
+        self.setWindowTitle("Students Viewer")
         self.resize(900, 400)
         self.setAttribute(Qt.WA_DeleteOnClose)
 
         self.df = df.reset_index(drop=True)
         self.current_page = 0
-        self.total_pages = len(self.df) // STUDENTS_PER_PAGE
+
+        # ✅ FIX: correct total pages
+        self.total_pages = (
+            len(self.df) + STUDENTS_PER_PAGE - 1
+        ) // STUDENTS_PER_PAGE
+
         self.updating_table = False
 
-        # Table
+        # ---------- TABLE ----------
         self.table = QTableWidget()
         self.table.setColumnCount(len(self.df.columns))
         self.table.setHorizontalHeaderLabels(self.df.columns.tolist())
         self.table.itemChanged.connect(self.save_edit)
 
-        # Buttons
+        # ---------- NAV ----------
         self.prev_btn = QPushButton("Previous")
         self.next_btn = QPushButton("Next")
-        self.page_label = QLabel()
+        self.page_label = QLabel(alignment=Qt.AlignCenter)
 
         self.prev_btn.clicked.connect(self.prev_page)
         self.next_btn.clicked.connect(self.next_page)
@@ -45,18 +50,21 @@ class StudentPopup(QDialog):
 
         self.update_page()
 
+    # =====================================================
+    # PAGE RENDER
+    # =====================================================
     def update_page(self):
         self.updating_table = True
         self.table.setRowCount(0)
 
         start = self.current_page * STUDENTS_PER_PAGE
-        end = start + STUDENTS_PER_PAGE
+        end = min(start + STUDENTS_PER_PAGE, len(self.df))
         page_df = self.df.iloc[start:end]
 
         for row_idx, (_, row) in enumerate(page_df.iterrows()):
             self.table.insertRow(row_idx)
             for col_idx, value in enumerate(row):
-                item = QTableWidgetItem(str(value))
+                item = QTableWidgetItem("" if value is None else str(value))
                 item.setFlags(item.flags() | Qt.ItemIsEditable)
                 self.table.setItem(row_idx, col_idx, item)
 
@@ -69,6 +77,9 @@ class StudentPopup(QDialog):
 
         self.updating_table = False
 
+    # =====================================================
+    # EDIT HANDLING
+    # =====================================================
     def save_edit(self, item):
         if self.updating_table:
             return
@@ -79,20 +90,26 @@ class StudentPopup(QDialog):
         df_row = self.current_page * STUDENTS_PER_PAGE + table_row
         df_col = self.df.columns[table_col]
 
-        new_value = item.text()
+        new_value = item.text().strip()
 
-        if df_col in ["student_id", "math", "literature", "english"]:
+        # numeric fields
+        if df_col in ["math", "literature", "english"]:
             try:
-                new_value = int(new_value)
+                new_value = float(new_value)
             except ValueError:
                 return
 
         self.df.at[df_row, df_col] = new_value
 
+    # =====================================================
+    # NAV
+    # =====================================================
     def next_page(self):
-        self.current_page += 1
-        self.update_page()
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self.update_page()
 
     def prev_page(self):
-        self.current_page -= 1
-        self.update_page()
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.update_page()
