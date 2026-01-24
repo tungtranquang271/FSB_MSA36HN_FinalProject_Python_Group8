@@ -11,6 +11,10 @@ def clean_and_save_students():
     # =====================
     df = pd.DataFrame(load_from_text_file(RAW_FILE))
 
+    if df.empty:
+        save_to_text_file([], CLEAN_FILE)
+        return df
+
     # =====================
     # 2. Sort & remove duplicate
     # =====================
@@ -35,10 +39,15 @@ def clean_and_save_students():
     # =====================
 
     # ---- hometown ----
-    if "hometown" in df.columns and df["hometown"].notna().any():
-        df["hometown"] = df["hometown"].fillna(
-            df["hometown"].mode()[0]
-        )
+    if "hometown" in df.columns:
+        if df["hometown"].notna().any():
+            df["hometown"] = df["hometown"].fillna(df["hometown"].mode()[0])
+        else:
+            df["hometown"] = df["hometown"].fillna("N/A")
+
+    # ---- email ----
+    if "email" in df.columns:
+        df["email"] = df["email"].fillna("N/A")
 
     # ---- fill score by hometown mean ----
     if "hometown" in df.columns and score_cols:
@@ -53,7 +62,7 @@ def clean_and_save_students():
             df[score_cols].mean()
         )
 
-    # ---- round scores to 2 decimals ----
+    # ---- round scores ----
     if score_cols:
         df[score_cols] = df[score_cols].round(2)
 
@@ -69,13 +78,18 @@ def clean_and_save_students():
         df = df[df[required].notna().all(axis=1)]
 
     # =====================
-    # 6. Datetime → string (JSON SAFE)
+    # 6. Datetime → string
     # =====================
     if "date_of_birth" in df.columns:
         df["date_of_birth"] = df["date_of_birth"].dt.strftime("%Y-%m-%d")
 
     # =====================
-    # 7. Save CLEAN data
+    # 7. Final cleanup (NO NaN)
+    # =====================
+    df = df.fillna("N/A")
+
+    # =====================
+    # 8. Save CLEAN data
     # =====================
     save_to_text_file(df.to_dict(orient="records"), CLEAN_FILE)
 
