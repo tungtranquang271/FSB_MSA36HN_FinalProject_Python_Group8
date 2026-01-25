@@ -21,24 +21,23 @@ cities = [
 sample_students = []
 
 TOTAL_RECORDS = 100
-UNIQUE_IDS = 70        # 70 unique
-DUPLICATE_RECORDS = 30 # 30 duplicate
+UNIQUE_IDS = 70        
+DUPLICATE_RECORDS = 30 
 
-# ----------------------
-# 1. Generate 70 UNIQUE student_id
+# Generate 70 UNIQUE student_id
 # ----------------------
 student_ids = [f"SV{i:03d}" for i in range(1, UNIQUE_IDS + 1)]
 
-# ----------------------
-# 2. Add 30 DUPLICATE student_id
+
+# Add 30 DUPLICATE student_id
 # ----------------------
 student_ids += random.choices(student_ids, k=DUPLICATE_RECORDS)
 
 # Shuffle to mix duplicates
 random.shuffle(student_ids)
 
-# ----------------------
-# 3. Generate records
+
+# Generate records
 # ----------------------
 for student_id in student_ids:
     first_name = random.choice(first_names)
@@ -77,7 +76,7 @@ for student_id in student_ids:
         english = random_score(5.0, 8.0)
 
     student = {
-        "student_id": student_id,   # 🔥 DUPLICATE HERE
+        "student_id": student_id,   
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
@@ -90,15 +89,15 @@ for student_id in student_ids:
 
     sample_students.append(student)
 
-# ----------------------
-# 4. Insert to DB
+
+# Insert to DB
 # ----------------------
 try:
     student_collection.delete_many({})
-    print("🗑️  Old data removed.")
+    print("Old data removed.")
 
     result = student_collection.insert_many(sample_students)
-    print(f"✅ Inserted {len(result.inserted_ids)} EXTREMELY DIRTY records.")
+    print(f"Inserted {len(result.inserted_ids)} EXTREMELY DIRTY records.")
 
 except Exception as e:
-    print(f"❌ Insert error: {e}")
+    print(f"Insert error: {e}")
